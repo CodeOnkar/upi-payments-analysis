@@ -13,6 +13,12 @@ usage behavior suggest about financial inclusion? The project also
 demonstrates a full analytics workflow — cleaning, exploratory analysis, SQL
 querying, dashboarding, and forecasting — end to end.
 
+## Dashboard Preview
+
+![UPI Payments Dashboard](outputs/dashboard_screenshot.png)
+
+*Interactive version: [`outputs/dashboard.html`](outputs/dashboard.html) — open it in a browser for hover tooltips on every chart.*
+
 ## Dataset
 
 - **Source:** [UPI Payments India](https://www.kaggle.com/datasets/bhatnagardaksh/upipaymentsindia) (Kaggle), originally compiled from NPCI-published statistics.
@@ -137,6 +143,7 @@ outputs/
   UPI_Dashboard.xlsx             # Excel dashboard
   dashboard.html                 # Interactive web dashboard
   dashboard_data.json            # Data feeding the web dashboard
+  dashboard_screenshot.png       # Screenshot of dashboard.html, used in this README
 docs/
   Policy_Brief_UPI_Payments.md   # 2-page policy brief
 README.md
