@@ -1,0 +1,520 @@
+<title>UPI Payments India — Dashboard</title>
+<style>
+  .viz-root {
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6; /* blue - volume */
+    --series-2:       #1baf7a; /* aqua - value */
+    --series-3:       #4a3aa7; /* violet - yoy growth */
+    --series-forecast:#eda100; /* yellow - forecast */
+    --good:           #006300;
+    --event-line:     #898781;
+    --tooltip-bg:     #1f2937;
+    --tooltip-text:   #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    .viz-root {
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #199e70;
+      --series-3:       #9085e9;
+      --series-forecast:#c98500;
+      --good:           #0ca30c;
+      --event-line:     #898781;
+      --tooltip-bg:     #f0efec;
+      --tooltip-text:   #0b0b0b;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #199e70;
+      --series-3:       #9085e9;
+      --series-forecast:#c98500;
+      --good:           #0ca30c;
+      --tooltip-bg:     #f0efec;
+      --tooltip-text:   #0b0b0b;
+  }
+  :root[data-theme="light"] .viz-root {
+      --surface-1:      #fcfcfb;
+      --page-plane:     #f9f9f7;
+      --text-primary:   #0b0b0b;
+      --text-secondary: #52514e;
+      --text-muted:     #898781;
+      --gridline:       #e1e0d9;
+      --baseline:       #c3c2b7;
+      --border:         rgba(11,11,11,0.10);
+      --series-1:       #2a78d6;
+      --series-2:       #1baf7a;
+      --series-3:       #4a3aa7;
+      --series-forecast:#eda100;
+      --good:           #006300;
+      --tooltip-bg:     #1f2937;
+      --tooltip-text:   #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .viz-root {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 32px 20px 64px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header.page-header { margin-bottom: 28px; }
+  header.page-header h1 { font-size: 26px; margin: 0 0 6px; font-weight: 700; }
+  header.page-header p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 860px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  .kpi-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .kpi-value { font-size: 22px; font-weight: 700; color: var(--text-primary); }
+  .kpi-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 18px 10px;
+    position: relative;
+  }
+  .chart-card h2 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 2px;
+    color: var(--text-primary);
+  }
+  .chart-card .chart-note {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+  }
+  .full-width { grid-column: 1 / -1; }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .axis-label { fill: var(--text-muted); font-size: 10.5px; }
+  .gridline { stroke: var(--gridline); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+  .event-line { stroke: var(--event-line); stroke-width: 1; stroke-dasharray: 4 3; }
+  .event-label { fill: var(--text-secondary); font-size: 10px; }
+
+  .legend { display: flex; gap: 16px; font-size: 11.5px; color: var(--text-secondary); margin-bottom: 8px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    font-size: 11.5px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    line-height: 1.5;
+    opacity: 0;
+    transition: opacity 0.08s ease;
+    white-space: nowrap;
+    z-index: 5;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  }
+  .crosshair { stroke: var(--text-muted); stroke-width: 1; opacity: 0; pointer-events: none; }
+  .hover-dot { opacity: 0; }
+
+  .forecast-note {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--series-forecast);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-top: 16px;
+    line-height: 1.55;
+  }
+  .forecast-note b { color: var(--text-primary); }
+
+  footer.page-footer {
+    margin-top: 28px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+</style>
+
+<div class="viz-root">
+  <div class="wrap">
+    <header class="page-header">
+      <h1>UPI Payments India — Dashboard</h1>
+      <p>Monthly data, April 2016 – December 2021 · Source: NPCI data via Kaggle (bhatnagardaksh/upipaymentsindia)</p>
+    </header>
+
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h2>Monthly Transaction Volume</h2>
+        <p class="chart-note">Million transactions per month</p>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--series-1)"></span>Volume (Mn)</span>
+        </div>
+        <div id="chart-volume"></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Monthly Transaction Value</h2>
+        <p class="chart-note">Crore INR per month</p>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--series-2)"></span>Value (Cr INR)</span>
+        </div>
+        <div id="chart-value"></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Year-over-Year Growth %, 2018–2021</h2>
+        <p class="chart-note">2016–17 excluded: growth off UPI's near-zero launch base produces distorted, non-comparable percentages</p>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--series-3)"></span>YoY growth in transaction value</span>
+        </div>
+        <div id="chart-yoy"></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Total Annual Value: Actual vs. Linear Forecast</h2>
+        <p class="chart-note">2016 excluded from trend fit: partial year (Apr–Dec only)</p>
+        <div class="legend">
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--series-2)"></span>Actual (2017–2021)</span>
+          <span class="legend-item"><span class="legend-swatch" style="background:var(--series-forecast)"></span>Forecast (2022–2023)</span>
+        </div>
+        <div id="chart-forecast"></div>
+        <div class="forecast-note">
+          <b>How this forecast works:</b> a straight line is fit through 2017–2021 annual totals (ordinary least-squares
+          regression) and extended forward. It assumes the past <i>rate</i> of increase continues unchanged. Since
+          annual value actually <b>more than doubled in 2021 alone</b>, this method likely <b>understates</b> true
+          2022–23 growth — it's a conservative baseline, not a real prediction.
+        </div>
+      </div>
+    </div>
+
+    <footer class="page-footer">
+      Built from cleaned UPI dataset · Values in Cr INR / Mn transactions as published by NPCI
+    </footer>
+  </div>
+</div>
+
+<script>
+const DATA = {"monthly": [{"date": "2016-04", "label": "Apr 2016", "banks_live": 21, "volume_mn": 0.0, "value_cr": 0.0, "avg_ticket_size_inr": null, "mom_growth_pct": null, "yoy_growth_pct": null}, {"date": "2016-05", "label": "May 2016", "banks_live": 21, "volume_mn": 0.0, "value_cr": 0.0, "avg_ticket_size_inr": null, "mom_growth_pct": null, "yoy_growth_pct": null}, {"date": "2016-06", "label": "Jun 2016", "banks_live": 21, "volume_mn": 0.0, "value_cr": 0.0, "avg_ticket_size_inr": null, "mom_growth_pct": null, "yoy_growth_pct": null}, {"date": "2016-07", "label": "Jul 2016", "banks_live": 21, "volume_mn": 0.09, "value_cr": 0.38, "avg_ticket_size_inr": 42.22, "mom_growth_pct": null, "yoy_growth_pct": null}, {"date": "2016-08", "label": "Aug 2016", "banks_live": 21, "volume_mn": 0.09, "value_cr": 3.09, "avg_ticket_size_inr": 343.33, "mom_growth_pct": 713.16, "yoy_growth_pct": null}, {"date": "2016-09", "label": "Sep 2016", "banks_live": 25, "volume_mn": 0.09, "value_cr": 32.64, "avg_ticket_size_inr": 3626.67, "mom_growth_pct": 956.31, "yoy_growth_pct": null}, {"date": "2016-10", "label": "Oct 2016", "banks_live": 26, "volume_mn": 0.1, "value_cr": 48.57, "avg_ticket_size_inr": 4857.0, "mom_growth_pct": 48.81, "yoy_growth_pct": null}, {"date": "2016-11", "label": "Nov 2016", "banks_live": 30, "volume_mn": 0.29, "value_cr": 100.46, "avg_ticket_size_inr": 3464.14, "mom_growth_pct": 106.84, "yoy_growth_pct": null}, {"date": "2016-12", "label": "Dec 2016", "banks_live": 35, "volume_mn": 1.99, "value_cr": 707.93, "avg_ticket_size_inr": 3557.44, "mom_growth_pct": 604.69, "yoy_growth_pct": null}, {"date": "2017-01", "label": "Jan 2017", "banks_live": 36, "volume_mn": 4.46, "value_cr": 1696.22, "avg_ticket_size_inr": 3803.18, "mom_growth_pct": 139.6, "yoy_growth_pct": null}, {"date": "2017-02", "label": "Feb 2017", "banks_live": 44, "volume_mn": 4.38, "value_cr": 1937.71, "avg_ticket_size_inr": 4424.0, "mom_growth_pct": 14.24, "yoy_growth_pct": null}, {"date": "2017-03", "label": "Mar 2017", "banks_live": 44, "volume_mn": 6.37, "value_cr": 2425.14, "avg_ticket_size_inr": 3807.13, "mom_growth_pct": 25.15, "yoy_growth_pct": null}, {"date": "2017-04", "label": "Apr 2017", "banks_live": 48, "volume_mn": 7.2, "value_cr": 2271.24, "avg_ticket_size_inr": 3154.5, "mom_growth_pct": -6.35, "yoy_growth_pct": null}, {"date": "2017-05", "label": "May 2017", "banks_live": 49, "volume_mn": 9.36, "value_cr": 2797.07, "avg_ticket_size_inr": 2988.32, "mom_growth_pct": 23.15, "yoy_growth_pct": null}, {"date": "2017-06", "label": "Jun 2017", "banks_live": 52, "volume_mn": 10.35, "value_cr": 3098.36, "avg_ticket_size_inr": 2993.58, "mom_growth_pct": 10.77, "yoy_growth_pct": null}, {"date": "2017-07", "label": "Jul 2017", "banks_live": 53, "volume_mn": 11.63, "value_cr": 3411.35, "avg_ticket_size_inr": 2933.23, "mom_growth_pct": 10.1, "yoy_growth_pct": 897623.68}, {"date": "2017-08", "label": "Aug 2017", "banks_live": 55, "volume_mn": 16.8, "value_cr": 4156.62, "avg_ticket_size_inr": 2474.18, "mom_growth_pct": 21.85, "yoy_growth_pct": 134418.45}, {"date": "2017-09", "label": "Sep 2017", "banks_live": 57, "volume_mn": 30.98, "value_cr": 5325.81, "avg_ticket_size_inr": 1719.11, "mom_growth_pct": 28.13, "yoy_growth_pct": 16216.82}, {"date": "2017-10", "label": "Oct 2017", "banks_live": 60, "volume_mn": 76.96, "value_cr": 7057.78, "avg_ticket_size_inr": 917.07, "mom_growth_pct": 32.52, "yoy_growth_pct": 14431.15}, {"date": "2017-11", "label": "Nov 2017", "banks_live": 61, "volume_mn": 105.02, "value_cr": 9669.33, "avg_ticket_size_inr": 920.71, "mom_growth_pct": 37.0, "yoy_growth_pct": 9525.05}, {"date": "2017-12", "label": "Dec 2017", "banks_live": 67, "volume_mn": 145.64, "value_cr": 13174.24, "avg_ticket_size_inr": 904.58, "mom_growth_pct": 36.25, "yoy_growth_pct": 1760.95}, {"date": "2018-01", "label": "Jan 2018", "banks_live": 71, "volume_mn": 151.83, "value_cr": 15571.2, "avg_ticket_size_inr": 1025.57, "mom_growth_pct": 18.19, "yoy_growth_pct": 817.99}, {"date": "2018-02", "label": "Feb 2018", "banks_live": 86, "volume_mn": 171.4, "value_cr": 19126.2, "avg_ticket_size_inr": 1115.88, "mom_growth_pct": 22.83, "yoy_growth_pct": 887.05}, {"date": "2018-03", "label": "Mar 2018", "banks_live": 91, "volume_mn": 178.05, "value_cr": 24172.6, "avg_ticket_size_inr": 1357.63, "mom_growth_pct": 26.38, "yoy_growth_pct": 896.75}, {"date": "2018-04", "label": "Apr 2018", "banks_live": 97, "volume_mn": 190.08, "value_cr": 27021.85, "avg_ticket_size_inr": 1421.6, "mom_growth_pct": 11.79, "yoy_growth_pct": 1089.74}, {"date": "2018-05", "label": "May 2018", "banks_live": 101, "volume_mn": 189.48, "value_cr": 33288.51, "avg_ticket_size_inr": 1756.84, "mom_growth_pct": 23.19, "yoy_growth_pct": 1090.12}, {"date": "2018-06", "label": "Jun 2018", "banks_live": 110, "volume_mn": 246.37, "value_cr": 40834.03, "avg_ticket_size_inr": 1657.43, "mom_growth_pct": 22.67, "yoy_growth_pct": 1217.92}, {"date": "2018-07", "label": "Jul 2018", "banks_live": 114, "volume_mn": 273.75, "value_cr": 51843.14, "avg_ticket_size_inr": 1893.81, "mom_growth_pct": 26.96, "yoy_growth_pct": 1419.73}, {"date": "2018-08", "label": "Aug 2018", "banks_live": 114, "volume_mn": 312.02, "value_cr": 54212.26, "avg_ticket_size_inr": 1737.46, "mom_growth_pct": 4.57, "yoy_growth_pct": 1204.24}, {"date": "2018-09", "label": "Sep 2018", "banks_live": 122, "volume_mn": 405.87, "value_cr": 59835.36, "avg_ticket_size_inr": 1474.25, "mom_growth_pct": 10.37, "yoy_growth_pct": 1023.5}, {"date": "2018-10", "label": "Oct 2018", "banks_live": 128, "volume_mn": 482.36, "value_cr": 74978.27, "avg_ticket_size_inr": 1554.4, "mom_growth_pct": 25.31, "yoy_growth_pct": 962.35}, {"date": "2018-11", "label": "Nov 2018", "banks_live": 128, "volume_mn": 524.94, "value_cr": 82232.21, "avg_ticket_size_inr": 1566.51, "mom_growth_pct": 9.67, "yoy_growth_pct": 750.44}, {"date": "2018-12", "label": "Dec 2018", "banks_live": 129, "volume_mn": 620.17, "value_cr": 102594.82, "avg_ticket_size_inr": 1654.3, "mom_growth_pct": 24.76, "yoy_growth_pct": 678.75}, {"date": "2019-01", "label": "Jan 2019", "banks_live": 134, "volume_mn": 672.75, "value_cr": 109932.43, "avg_ticket_size_inr": 1634.08, "mom_growth_pct": 7.15, "yoy_growth_pct": 606.0}, {"date": "2019-02", "label": "Feb 2019", "banks_live": 139, "volume_mn": 674.19, "value_cr": 106737.12, "avg_ticket_size_inr": 1583.19, "mom_growth_pct": -2.91, "yoy_growth_pct": 458.07}, {"date": "2019-03", "label": "Mar 2019", "banks_live": 142, "volume_mn": 799.54, "value_cr": 133460.72, "avg_ticket_size_inr": 1669.22, "mom_growth_pct": 25.04, "yoy_growth_pct": 452.12}, {"date": "2019-04", "label": "Apr 2019", "banks_live": 144, "volume_mn": 781.79, "value_cr": 142034.39, "avg_ticket_size_inr": 1816.78, "mom_growth_pct": 6.42, "yoy_growth_pct": 425.63}, {"date": "2019-05", "label": "May 2019", "banks_live": 143, "volume_mn": 733.54, "value_cr": 152449.29, "avg_ticket_size_inr": 2078.27, "mom_growth_pct": 7.33, "yoy_growth_pct": 357.96}, {"date": "2019-06", "label": "Jun 2019", "banks_live": 142, "volume_mn": 754.54, "value_cr": 146566.35, "avg_ticket_size_inr": 1942.46, "mom_growth_pct": -3.86, "yoy_growth_pct": 258.93}, {"date": "2019-07", "label": "Jul 2019", "banks_live": 143, "volume_mn": 822.29, "value_cr": 146386.64, "avg_ticket_size_inr": 1780.23, "mom_growth_pct": -0.12, "yoy_growth_pct": 182.36}, {"date": "2019-08", "label": "Aug 2019", "banks_live": 141, "volume_mn": 918.35, "value_cr": 154504.89, "avg_ticket_size_inr": 1682.42, "mom_growth_pct": 5.55, "yoy_growth_pct": 185.0}, {"date": "2019-09", "label": "Sep 2019", "banks_live": 141, "volume_mn": 955.02, "value_cr": 161456.56, "avg_ticket_size_inr": 1690.61, "mom_growth_pct": 4.5, "yoy_growth_pct": 169.83}, {"date": "2019-10", "label": "Oct 2019", "banks_live": 141, "volume_mn": 1148.36, "value_cr": 191359.94, "avg_ticket_size_inr": 1666.38, "mom_growth_pct": 18.52, "yoy_growth_pct": 155.22}, {"date": "2019-11", "label": "Nov 2019", "banks_live": 143, "volume_mn": 1218.77, "value_cr": 189229.09, "avg_ticket_size_inr": 1552.62, "mom_growth_pct": -1.11, "yoy_growth_pct": 130.12}, {"date": "2019-12", "label": "Dec 2019", "banks_live": 143, "volume_mn": 1308.4, "value_cr": 202520.76, "avg_ticket_size_inr": 1547.85, "mom_growth_pct": 7.02, "yoy_growth_pct": 97.4}, {"date": "2020-01", "label": "Jan 2020", "banks_live": 144, "volume_mn": 1305.02, "value_cr": 216242.97, "avg_ticket_size_inr": 1657.01, "mom_growth_pct": 6.78, "yoy_growth_pct": 96.71}, {"date": "2020-02", "label": "Feb 2020", "banks_live": 146, "volume_mn": 1325.69, "value_cr": 222516.95, "avg_ticket_size_inr": 1678.5, "mom_growth_pct": 2.9, "yoy_growth_pct": 108.47}, {"date": "2020-03", "label": "Mar 2020", "banks_live": 148, "volume_mn": 1246.84, "value_cr": 206462.31, "avg_ticket_size_inr": 1655.88, "mom_growth_pct": -7.22, "yoy_growth_pct": 54.7}, {"date": "2020-04", "label": "Apr 2020", "banks_live": 153, "volume_mn": 999.57, "value_cr": 151140.66, "avg_ticket_size_inr": 1512.06, "mom_growth_pct": -26.8, "yoy_growth_pct": 6.41}, {"date": "2020-05", "label": "May 2020", "banks_live": 155, "volume_mn": 1234.5, "value_cr": 218391.6, "avg_ticket_size_inr": 1769.07, "mom_growth_pct": 44.5, "yoy_growth_pct": 43.26}, {"date": "2020-06", "label": "Jun 2020", "banks_live": 155, "volume_mn": 1336.93, "value_cr": 261835.0, "avg_ticket_size_inr": 1958.48, "mom_growth_pct": 19.89, "yoy_growth_pct": 78.65}, {"date": "2020-07", "label": "Jul 2020", "banks_live": 164, "volume_mn": 1497.36, "value_cr": 290537.86, "avg_ticket_size_inr": 1940.33, "mom_growth_pct": 10.96, "yoy_growth_pct": 98.47}, {"date": "2020-08", "label": "Aug 2020", "banks_live": 168, "volume_mn": 1618.83, "value_cr": 298307.61, "avg_ticket_size_inr": 1842.74, "mom_growth_pct": 2.67, "yoy_growth_pct": 93.07}, {"date": "2020-09", "label": "Sep 2020", "banks_live": 174, "volume_mn": 1800.14, "value_cr": 329027.66, "avg_ticket_size_inr": 1827.79, "mom_growth_pct": 10.3, "yoy_growth_pct": 103.79}, {"date": "2020-10", "label": "Oct 2020", "banks_live": 189, "volume_mn": 2071.62, "value_cr": 386106.74, "avg_ticket_size_inr": 1863.79, "mom_growth_pct": 17.35, "yoy_growth_pct": 101.77}, {"date": "2020-11", "label": "Nov 2020", "banks_live": 200, "volume_mn": 2210.23, "value_cr": 390999.15, "avg_ticket_size_inr": 1769.04, "mom_growth_pct": 1.27, "yoy_growth_pct": 106.63}, {"date": "2020-12", "label": "Dec 2020", "banks_live": 207, "volume_mn": 2234.16, "value_cr": 416176.21, "avg_ticket_size_inr": 1862.79, "mom_growth_pct": 6.44, "yoy_growth_pct": 105.5}, {"date": "2021-01", "label": "Jan 2021", "banks_live": 207, "volume_mn": 2302.73, "value_cr": 431181.89, "avg_ticket_size_inr": 1872.48, "mom_growth_pct": 3.61, "yoy_growth_pct": 99.4}, {"date": "2021-02", "label": "Feb 2021", "banks_live": 213, "volume_mn": 2292.9, "value_cr": 425062.76, "avg_ticket_size_inr": 1853.82, "mom_growth_pct": -1.42, "yoy_growth_pct": 91.02}, {"date": "2021-03", "label": "Mar 2021", "banks_live": 216, "volume_mn": 2731.68, "value_cr": 504886.44, "avg_ticket_size_inr": 1848.26, "mom_growth_pct": 18.78, "yoy_growth_pct": 144.54}, {"date": "2021-04", "label": "Apr 2021", "banks_live": 220, "volume_mn": 2641.06, "value_cr": 493663.68, "avg_ticket_size_inr": 1869.19, "mom_growth_pct": -2.22, "yoy_growth_pct": 226.63}, {"date": "2021-05", "label": "May 2021", "banks_live": 224, "volume_mn": 2539.57, "value_cr": 490638.65, "avg_ticket_size_inr": 1931.98, "mom_growth_pct": -0.61, "yoy_growth_pct": 124.66}, {"date": "2021-06", "label": "Jun 2021", "banks_live": 229, "volume_mn": 2807.51, "value_cr": 547373.17, "avg_ticket_size_inr": 1949.67, "mom_growth_pct": 11.56, "yoy_growth_pct": 109.05}, {"date": "2021-07", "label": "Jul 2021", "banks_live": 235, "volume_mn": 3247.82, "value_cr": 606281.14, "avg_ticket_size_inr": 1866.73, "mom_growth_pct": 10.76, "yoy_growth_pct": 108.68}, {"date": "2021-08", "label": "Aug 2021", "banks_live": 249, "volume_mn": 3555.55, "value_cr": 639116.95, "avg_ticket_size_inr": 1797.52, "mom_growth_pct": 5.42, "yoy_growth_pct": 114.25}, {"date": "2021-09", "label": "Sep 2021", "banks_live": 259, "volume_mn": 3654.3, "value_cr": 654351.81, "avg_ticket_size_inr": 1790.64, "mom_growth_pct": 2.38, "yoy_growth_pct": 98.87}, {"date": "2021-10", "label": "Oct 2021", "banks_live": 261, "volume_mn": 4218.65, "value_cr": 771444.98, "avg_ticket_size_inr": 1828.65, "mom_growth_pct": 17.89, "yoy_growth_pct": 99.8}, {"date": "2021-11", "label": "Nov 2021", "banks_live": 274, "volume_mn": 4186.48, "value_cr": 768436.11, "avg_ticket_size_inr": 1835.52, "mom_growth_pct": -0.39, "yoy_growth_pct": 96.53}, {"date": "2021-12", "label": "Dec 2021", "banks_live": 282, "volume_mn": 4566.3, "value_cr": 826848.22, "avg_ticket_size_inr": 1810.76, "mom_growth_pct": 7.6, "yoy_growth_pct": 98.68}], "yearly": [{"year": 2016, "total_volume_mn": 2.65, "total_value_cr": 893.07, "banks_live_year_end": 35, "is_forecast": false}, {"year": 2017, "total_volume_mn": 429.15, "total_value_cr": 57020.87, "banks_live_year_end": 67, "is_forecast": false}, {"year": 2018, "total_volume_mn": 3746.32, "total_value_cr": 585710.45, "banks_live_year_end": 129, "is_forecast": false}, {"year": 2019, "total_volume_mn": 10787.54, "total_value_cr": 1836638.18, "banks_live_year_end": 144, "is_forecast": false}, {"year": 2020, "total_volume_mn": 18880.89, "total_value_cr": 3387744.72, "banks_live_year_end": 207, "is_forecast": false}, {"year": 2021, "total_volume_mn": 38744.55, "total_value_cr": 7159285.8, "banks_live_year_end": 282, "is_forecast": false}, {"year": 2022, "total_volume_mn": 42047.3, "total_value_cr": 7707249.24, "banks_live_year_end": null, "is_forecast": true}, {"year": 2023, "total_volume_mn": 51223.84, "total_value_cr": 9407905.66, "banks_live_year_end": null, "is_forecast": true}]};
+
+const monthly = DATA.monthly;
+const yearly = DATA.yearly;
+
+// ---------- KPI cards ----------
+const last = monthly[monthly.length - 1];
+const totalVolume = monthly.reduce((s, r) => s + r.volume_mn, 0);
+const totalValue = monthly.reduce((s, r) => s + r.value_cr, 0);
+const mature = monthly.filter(r => r.date >= '2018-01' && r.mom_growth_pct !== null);
+const peak = mature.reduce((a, b) => (b.mom_growth_pct > a.mom_growth_pct ? b : a));
+
+function fmtCr(v) {
+  if (v >= 1e5) return (v/1e5).toFixed(2) + " Lakh Cr";
+  return v.toLocaleString('en-IN', {maximumFractionDigits:0}) + " Cr";
+}
+
+const kpis = [
+  { label: "Total Volume (2016–21)", value: totalVolume.toLocaleString('en-IN',{maximumFractionDigits:0}) + " Mn", sub: "Cumulative transactions" },
+  { label: "Total Value (2016–21)", value: "₹" + fmtCr(totalValue), sub: "Cumulative transaction value" },
+  { label: "Peak MoM Growth", value: peak.label, sub: "+" + peak.mom_growth_pct.toFixed(1) + "% vs prior month" },
+  { label: "Banks Live (Dec 2021)", value: last.banks_live.toString(), sub: "Up from 21 at launch (Apr 2016)" },
+];
+
+const kpiRow = document.getElementById('kpi-row');
+kpis.forEach(k => {
+  const div = document.createElement('div');
+  div.className = 'kpi-card';
+  div.innerHTML = `<div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-sub">${k.sub}</div>`;
+  kpiRow.appendChild(div);
+});
+
+// ---------- Shared chart helpers ----------
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+function niceTicks(min, max, count) {
+  const range = max - min || 1;
+  const rough = range / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  let step;
+  if (norm < 1.5) step = 1 * mag;
+  else if (norm < 3) step = 2 * mag;
+  else if (norm < 7) step = 5 * mag;
+  else step = 10 * mag;
+  const niceMin = Math.floor(min / step) * step;
+  const niceMax = Math.ceil(max / step) * step;
+  const ticks = [];
+  for (let v = niceMin; v <= niceMax + step * 0.001; v += step) ticks.push(Math.round(v * 1000) / 1000);
+  return ticks;
+}
+
+function makeLineChart(containerId, rows, valueKey, color, opts) {
+  opts = opts || {};
+  const W = 520, H = 260;
+  const padL = 52, padR = 16, padT = 12, padB = 30;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+
+  const vals = rows.map(r => r[valueKey]).filter(v => v !== null);
+  const yMax = Math.max(...vals);
+  const yMin = Math.min(0, Math.min(...vals));
+  const ticks = niceTicks(yMin, yMax, 5);
+  const yTop = ticks[ticks.length - 1], yBot = ticks[0];
+
+  const x = i => padL + (i / (rows.length - 1)) * innerW;
+  const y = v => padT + innerH - ((v - yBot) / (yTop - yBot)) * innerH;
+
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}` });
+
+  // gridlines + y-axis labels
+  ticks.forEach(t => {
+    svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y(t), y2: y(t), class: 'gridline' }));
+    const label = el('text', { x: padL - 8, y: y(t) + 3, 'text-anchor': 'end', class: 'axis-label' });
+    label.textContent = t >= 1000 ? (t/1000).toFixed(0) + 'k' : t;
+    svg.appendChild(label);
+  });
+  svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y(yBot), y2: y(yBot), class: 'baseline' }));
+
+  // x-axis: show a tick every ~12 months (yearly) for monthly charts, or every point for yearly charts
+  const xTickEvery = opts.xTickEvery || Math.max(1, Math.round(rows.length / 6));
+  rows.forEach((r, i) => {
+    if (i % xTickEvery === 0 || i === rows.length - 1) {
+      const label = el('text', { x: x(i), y: H - padB + 16, 'text-anchor': 'middle', class: 'axis-label' });
+      label.textContent = opts.xLabel ? opts.xLabel(r) : r.label;
+      svg.appendChild(label);
+    }
+  });
+
+  // event annotations (vertical dashed lines)
+  if (opts.events) {
+    opts.events.forEach(ev => {
+      const idx = rows.findIndex(r => r.date === ev.date);
+      if (idx === -1) return;
+      svg.appendChild(el('line', { x1: x(idx), x2: x(idx), y1: padT, y2: H - padB, class: 'event-line' }));
+      const t = el('text', { x: x(idx) + 4, y: padT + 10, class: 'event-label' });
+      t.textContent = ev.label;
+      svg.appendChild(t);
+    });
+  }
+
+  // line path
+  let path = '';
+  rows.forEach((r, i) => {
+    if (r[valueKey] === null) return;
+    path += (path ? 'L' : 'M') + x(i) + ',' + y(r[valueKey]) + ' ';
+  });
+  svg.appendChild(el('path', { d: path, fill: 'none', stroke: color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+
+  // hover layer
+  const crosshair = el('line', { class: 'crosshair', y1: padT, y2: H - padB });
+  const dot = el('circle', { class: 'hover-dot', r: 4, fill: color, stroke: 'var(--surface-1)', 'stroke-width': 2 });
+  svg.appendChild(crosshair);
+  svg.appendChild(dot);
+
+  const container = document.getElementById(containerId);
+  container.style.position = 'relative';
+  container.appendChild(svg);
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tooltip';
+  container.appendChild(tooltip);
+
+  const overlay = el('rect', { x: padL, y: padT, width: innerW, height: innerH, fill: 'transparent' });
+  overlay.style.cursor = 'crosshair';
+  svg.appendChild(overlay);
+
+  overlay.addEventListener('mousemove', (e) => {
+    const rect = svg.getBoundingClientRect();
+    const scaleX = W / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    let idx = Math.round(((mx - padL) / innerW) * (rows.length - 1));
+    idx = Math.max(0, Math.min(rows.length - 1, idx));
+    const r = rows[idx];
+    if (r[valueKey] === null) { tooltip.style.opacity = 0; crosshair.style.opacity = 0; dot.style.opacity = 0; return; }
+    crosshair.setAttribute('x1', x(idx)); crosshair.setAttribute('x2', x(idx));
+    crosshair.style.opacity = 1;
+    dot.setAttribute('cx', x(idx)); dot.setAttribute('cy', y(r[valueKey]));
+    dot.style.opacity = 1;
+    tooltip.style.opacity = 1;
+    const valLabel = opts.tooltipFmt ? opts.tooltipFmt(r) : r[valueKey];
+    tooltip.innerHTML = `<b>${r.label}</b><br>${valLabel}`;
+    const pxLeft = (x(idx) / W) * rect.width;
+    const pxTop = (y(r[valueKey]) / H) * rect.height;
+    tooltip.style.left = Math.min(pxLeft + 10, rect.width - 130) + 'px';
+    tooltip.style.top = Math.max(pxTop - 40, 0) + 'px';
+  });
+  overlay.addEventListener('mouseleave', () => {
+    tooltip.style.opacity = 0; crosshair.style.opacity = 0; dot.style.opacity = 0;
+  });
+}
+
+function makeBarChart(containerId, rows, valueKey, colorFn, opts) {
+  opts = opts || {};
+  const W = 520, H = 260;
+  const padL = 52, padR = 16, padT = 12, padB = 30;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+
+  const vals = rows.map(r => r[valueKey]).filter(v => v !== null && v !== undefined);
+  const yMax = Math.max(...vals, 0);
+  const yMin = Math.min(0, ...vals);
+  const ticks = niceTicks(yMin, yMax, 5);
+  const yTop = ticks[ticks.length - 1], yBot = ticks[0];
+
+  const bandW = innerW / rows.length;
+  const barW = Math.min(28, bandW * 0.6);
+  const xC = i => padL + bandW * i + bandW / 2;
+  const y = v => padT + innerH - ((v - yBot) / (yTop - yBot)) * innerH;
+  const y0 = y(0);
+
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}` });
+
+  ticks.forEach(t => {
+    svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y(t), y2: y(t), class: 'gridline' }));
+    const label = el('text', { x: padL - 8, y: y(t) + 3, 'text-anchor': 'end', class: 'axis-label' });
+    label.textContent = opts.yFmt ? opts.yFmt(t) : t;
+    svg.appendChild(label);
+  });
+  svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y0, y2: y0, class: 'baseline' }));
+
+  rows.forEach((r, i) => {
+    const label = el('text', { x: xC(i), y: H - padB + 16, 'text-anchor': 'middle', class: 'axis-label' });
+    label.textContent = opts.xLabel ? opts.xLabel(r) : r.label;
+    svg.appendChild(label);
+
+    const v = r[valueKey];
+    if (v === null || v === undefined) return;
+    const barTop = Math.min(y(v), y0);
+    const barH = Math.max(1, Math.abs(y(v) - y0));
+    const rect = el('rect', {
+      x: xC(i) - barW / 2, y: barTop, width: barW, height: barH,
+      fill: colorFn(r), rx: 3, ry: 3,
+    });
+    svg.appendChild(rect);
+  });
+
+  const container = document.getElementById(containerId);
+  container.style.position = 'relative';
+  container.appendChild(svg);
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tooltip';
+  container.appendChild(tooltip);
+
+  rows.forEach((r, i) => {
+    const v = r[valueKey];
+    if (v === null || v === undefined) return;
+    const hitRect = el('rect', { x: xC(i) - bandW/2, y: padT, width: bandW, height: innerH, fill: 'transparent' });
+    hitRect.style.cursor = 'pointer';
+    hitRect.addEventListener('mousemove', (e) => {
+      const rect = svg.getBoundingClientRect();
+      tooltip.style.opacity = 1;
+      const valLabel = opts.tooltipFmt ? opts.tooltipFmt(r) : v;
+      tooltip.innerHTML = `<b>${r.label}</b><br>${valLabel}`;
+      const pxLeft = (xC(i) / W) * rect.width;
+      const pxTop = (y(v) / H) * rect.height;
+      tooltip.style.left = Math.min(Math.max(pxLeft - 50, 0), rect.width - 130) + 'px';
+      tooltip.style.top = Math.max(pxTop - 40, 0) + 'px';
+    });
+    hitRect.addEventListener('mouseleave', () => { tooltip.style.opacity = 0; });
+    svg.appendChild(hitRect);
+  });
+}
+
+// ---------- Chart 1: Volume ----------
+makeLineChart('chart-volume', monthly, 'volume_mn', 'var(--series-1)'.trim() ? getComputedColor('--series-1') : '#2a78d6', {
+  xTickEvery: 12,
+  events: [
+    { date: '2016-11', label: 'Demonetization' },
+    { date: '2020-03', label: 'COVID onset' },
+  ],
+  tooltipFmt: r => `Volume: ${r.volume_mn.toLocaleString('en-IN')} Mn<br>Banks live: ${r.banks_live}`,
+});
+
+// ---------- Chart 2: Value ----------
+makeLineChart('chart-value', monthly, 'value_cr', getComputedColor('--series-2'), {
+  xTickEvery: 12,
+  events: [
+    { date: '2016-11', label: 'Demonetization' },
+    { date: '2020-03', label: 'COVID onset' },
+  ],
+  tooltipFmt: r => `Value: ₹${r.value_cr.toLocaleString('en-IN')} Cr`,
+});
+
+// ---------- Chart 3: YoY growth (2018+) ----------
+const yoyRows = monthly.filter(r => r.date >= '2018-01' && r.yoy_growth_pct !== null);
+makeBarChart('chart-yoy', yoyRows, 'yoy_growth_pct', () => getComputedColor('--series-3'), {
+  xTickEvery: 6,
+  xLabel: r => r.label.split(' ')[1] === undefined ? r.label : (r.date.endsWith('01') ? r.label : ''),
+  tooltipFmt: r => `YoY growth: ${r.yoy_growth_pct.toFixed(1)}%`,
+});
+
+// ---------- Chart 4: Forecast ----------
+makeBarChart('chart-forecast', yearly, 'total_value_cr',
+  r => r.is_forecast ? getComputedColor('--series-forecast') : getComputedColor('--series-2'),
+  {
+    xLabel: r => r.year,
+    yFmt: t => (t/1e5).toFixed(0) + 'L',
+    tooltipFmt: r => `${r.is_forecast ? 'Forecast' : 'Actual'}: ₹${(r.total_value_cr/1e5).toFixed(2)} Lakh Cr`,
+  }
+);
+
+function getComputedColor(varName) {
+  const root = document.querySelector('.viz-root');
+  return getComputedStyle(root).getPropertyValue(varName).trim();
+}
+</script>
